@@ -1,4 +1,4 @@
-cflags = $$(pkg-config --cflags libadwaita-1) -std=gnu11
+cflags = $$(pkg-config --cflags libadwaita-1) -std=gnu11 -g
 libs = $$(pkg-config --libs libadwaita-1)
 
 build_dir = build
