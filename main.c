@@ -31,8 +31,13 @@ static void append_to_file_path() {
         return;
     }
 
-    gssize bytes = g_output_stream_write((GOutputStream *)stream, text->inner_text->str,
-                                         text->inner_text->len, NULL, &error);
+    GtkTextIter start, end;
+    gtk_text_buffer_get_start_iter(buffer, &start);
+    gtk_text_buffer_get_end_iter(buffer, &end);
+    const char *str = gtk_text_buffer_get_text(buffer, &start, &end, true);
+    const gint len = gtk_text_buffer_get_char_count(buffer);
+
+    gssize bytes = g_output_stream_write((GOutputStream *)stream, str, len, NULL, &error);
     if (error) {
         gtk_label_set_text((GtkLabel *)status_area, "Error Occured while Appending!!!");
         return;
@@ -41,7 +46,7 @@ static void append_to_file_path() {
     g_string_printf(s, "appended %ld bytes to file: %s\n", bytes, filepath);
     gtk_label_set_text((GtkLabel *)status_area, s->str);
     free(s);
-    free(stream);
+    g_free((gpointer)str);
 }
 
 static void select_file_path(GtkWidget *widget, GtkEntryBuffer *data) {
@@ -175,7 +180,7 @@ int main(int argc, char **argv) {
 
     text = text_init();
 
-    app = adw_application_new("com.andmhn.macro", G_APPLICATION_DEFAULT_FLAGS);
+    app = adw_application_new("com.github.andmhn.macro", G_APPLICATION_DEFAULT_FLAGS);
     g_signal_connect(app, "activate", G_CALLBACK(activate), text);
     status = g_application_run(G_APPLICATION(app), argc, argv);
     g_object_unref(app);
