@@ -13,6 +13,9 @@ static GtkWindow *window;
 static GtkEntryBuffer *file_entry_buffer;
 static GtkWidget *status_area;
 static GtkTextBuffer *buffer;
+static GtkWidget *times_input;
+
+static size_t grab_times_value() { return gtk_spin_button_get_value((GtkSpinButton *)times_input); }
 
 static void append_to_file_path() {
     const char *filepath = gtk_entry_buffer_get_text(file_entry_buffer);
@@ -99,11 +102,11 @@ static void repeat(GtkWidget *widget, gpointer data) {
     gtk_text_buffer_get_start_iter(buffer, &start);
     gtk_text_buffer_get_end_iter(buffer, &end);
     const char *str = gtk_text_buffer_get_text(buffer, &start, &end, true);
-    if(gtk_text_buffer_get_char_count(buffer) == 0){
+    if (gtk_text_buffer_get_char_count(buffer) == 0) {
         gtk_label_set_text((GtkLabel *)status_area, "skipping! Reason: empty text area");
         return;
     }
-    size_t times = 2;
+    size_t times = grab_times_value();
     text_set(text, str);
     text_repeat(text, times);
     gtk_text_buffer_set_text(buffer, text->inner_text->str, text->inner_text->len);
@@ -114,17 +117,27 @@ static void repeat(GtkWidget *widget, gpointer data) {
 }
 
 static void create_action_bar(GtkWidget *box2) {
+    GtkWidget *n_label = gtk_label_new("times ");
+    GtkAdjustment *adjustment = gtk_adjustment_new(2, 0, 999, 1, 10, 0);
+    times_input = gtk_spin_button_new(adjustment, 1, 0);
+    gtk_widget_set_halign(times_input, GTK_ALIGN_START);
+
     GtkWidget *repeat_btn;
     repeat_btn = gtk_button_new_with_label("Repeat Text");
-    gtk_widget_set_halign(repeat_btn, GTK_ALIGN_END);
     g_signal_connect(repeat_btn, "clicked", G_CALLBACK(repeat), 0);
+
+    GtkWidget *spacer = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_widget_set_hexpand(spacer, true);
 
     GtkWidget *append_btn;
     append_btn = gtk_button_new_with_label("Append Text to File");
     gtk_widget_set_halign(append_btn, GTK_ALIGN_END);
     g_signal_connect(append_btn, "clicked", G_CALLBACK(append_to_file_path), 0);
 
+    gtk_box_append((GtkBox *)box2, n_label);
+    gtk_box_append((GtkBox *)box2, times_input);
     gtk_box_append((GtkBox *)box2, repeat_btn);
+    gtk_box_append((GtkBox *)box2, spacer);
     gtk_box_append((GtkBox *)box2, append_btn);
 }
 
@@ -148,6 +161,7 @@ static void create_editor_ui(GtkWindow *window) {
 
     GtkWidget *text_area = gtk_text_view_new();
     buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_area));
+    gtk_text_view_set_left_margin((GtkTextView *)text_area, 3);
     GtkWidget *scrolled_text_area = gtk_scrolled_window_new();
     gtk_scrolled_window_set_child((GtkScrolledWindow *)scrolled_text_area, text_area);
     gtk_widget_set_hexpand(scrolled_text_area, TRUE);
@@ -170,14 +184,13 @@ static void create_editor_ui(GtkWindow *window) {
     // clang-format on
 }
 
-const char *css =
-    ".scrolled_text_area {\n"
-    "    border-style: solid;\n"
-    "    border-width: 2px;\n"
-    "    border-color: rgba(233, 84, 32, 0.4);\n" // ubuntu color
-    "    border-radius: 5px;\n"
-    "    padding: 1px;\n"
-    "}\n";
+const char *css = ".scrolled_text_area {\n"
+                  "    border-style: solid;\n"
+                  "    border-width: 2px;\n"
+                  "    border-color: rgba(233, 84, 32, 0.4);\n" // ubuntu color
+                  "    border-radius: 5px;\n"
+                  "    padding: 1px;\n"
+                  "}\n";
 
 static void load_css(void) {
     GtkCssProvider *provider = gtk_css_provider_new();
@@ -185,11 +198,8 @@ static void load_css(void) {
 
     gtk_css_provider_load_from_string(provider, css);
 
-    gtk_style_context_add_provider_for_display(
-        display,
-        GTK_STYLE_PROVIDER(provider),
-        GTK_STYLE_PROVIDER_PRIORITY_APPLICATION
-    );
+    gtk_style_context_add_provider_for_display(display, GTK_STYLE_PROVIDER(provider),
+                                               GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
     g_object_unref(provider);
 }
 
