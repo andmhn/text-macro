@@ -20,7 +20,7 @@ static void append_to_file_path() {
 
     GFile *gfile = g_file_new_for_path(filepath);
     if (!g_file_query_exists(gfile, NULL)) { // g_file_query_file_type
-        g_string_printf(s, "file doesn't exist: %s\n", filepath);
+        g_string_printf(s, "file doesn't exist: %s", filepath);
         gtk_label_set_text((GtkLabel *)status_area, s->str);
         return;
     }
@@ -43,7 +43,7 @@ static void append_to_file_path() {
         return;
     }
 
-    g_string_printf(s, "appended %ld bytes to file: %s\n", bytes, filepath);
+    g_string_printf(s, "appended %ld bytes to file: %s", bytes, filepath);
     gtk_label_set_text((GtkLabel *)status_area, s->str);
     free(s);
     g_free((gpointer)str);
@@ -53,7 +53,7 @@ static void select_file_path(GtkWidget *widget, GtkEntryBuffer *data) {
     const char *text = gtk_entry_buffer_get_text(data);
     if (gtk_entry_buffer_get_length(data) > 0) {
         GString *s = g_string_new("");
-        g_string_printf(s, "file selected: %s\n", text);
+        g_string_printf(s, "file selected: %s", text);
         gtk_label_set_text((GtkLabel *)status_area, s->str);
 
         // TODO: (Optional) load to buffer
@@ -99,14 +99,17 @@ static void repeat(GtkWidget *widget, gpointer data) {
     gtk_text_buffer_get_start_iter(buffer, &start);
     gtk_text_buffer_get_end_iter(buffer, &end);
     const char *str = gtk_text_buffer_get_text(buffer, &start, &end, true);
-
+    if(gtk_text_buffer_get_char_count(buffer) == 0){
+        gtk_label_set_text((GtkLabel *)status_area, "skipping! Reason: empty text area");
+        return;
+    }
     size_t times = 2;
     text_set(text, str);
     text_repeat(text, times);
     gtk_text_buffer_set_text(buffer, text->inner_text->str, text->inner_text->len);
 
     GString *s = g_string_new("");
-    g_string_printf(s, "repeated %zu times\n", times);
+    g_string_printf(s, "repeated %zu times", times);
     gtk_label_set_text((GtkLabel *)status_area, s->str);
 }
 
@@ -130,6 +133,7 @@ static void create_editor_ui(GtkWindow *window) {
     gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
     gtk_widget_set_margin_top(grid, 10);
+    gtk_widget_set_margin_bottom(grid, 10);
     gtk_widget_set_margin_start(grid, 10);
     gtk_widget_set_margin_end(grid, 10);
     gtk_window_set_child(GTK_WINDOW(window), grid);
