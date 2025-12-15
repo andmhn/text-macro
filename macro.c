@@ -21,10 +21,11 @@ void text_set(Text* t, const char* str){
 }
 
 void text_repeat(Text* t, size_t times){
-    GString * copy = g_string_copy(t->inner_text);
+    GString* repeats = g_string_new("");
     for (size_t i = 1; i < times; i++) {
-        g_string_append(t->inner_text, copy->str);
+        g_string_append(repeats, t->inner_text->str);
     }
+    g_string_append(t->inner_text, repeats->str);
 }
 
 void text_reset(Text* t){
