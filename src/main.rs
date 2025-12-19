@@ -1,4 +1,4 @@
-use gtk::glib;
+use gtk::glib::{self, clone};
 use gtk::prelude::*;
 use gtk4 as gtk;
 use std::cell::RefCell;
@@ -96,14 +96,14 @@ fn create_topbar(window: &gtk4::ApplicationWindow, sm: &StateManager) -> gtk4::B
         .placeholder_text("Enter the file path here...")
         .hexpand(true)
         .build();
-    file_entry.connect_changed(glib::clone!(
+    file_entry.connect_changed(clone!(
         #[strong] sm, #[weak] file_entry,
         move |_| sm.set_path(file_entry.buffer().text().as_str())
     ));
     top_bar.append(&file_entry);
 
     let picker_btn = gtk::Button::with_label("Select File");
-    picker_btn.connect_clicked(glib::clone!(
+    picker_btn.connect_clicked(clone!(
         #[strong] sm, #[weak] window, #[weak] file_entry,
         move |_| handle_file_pick(&sm, &window, &file_entry.buffer())
     ));
@@ -123,7 +123,7 @@ fn create_action_bar(sm: &StateManager, bfr: gtk4::TextBuffer) -> gtk4::Box {
         .digits(0)
         .build();
 
-    times_input.connect_value_changed(glib::clone!(
+    times_input.connect_value_changed(clone!(
         #[strong] sm,
         move |n| {
             sm.set_times(n.value_as_int() as u32);
@@ -132,7 +132,7 @@ fn create_action_bar(sm: &StateManager, bfr: gtk4::TextBuffer) -> gtk4::Box {
 
     let repeat_btn = gtk::Button::builder().label("Repeat Text").build();
 
-    repeat_btn.connect_clicked(glib::clone!(
+    repeat_btn.connect_clicked(clone!(
         #[strong] sm, #[weak] bfr,
         move |_| handle_repeat(&sm, &bfr),
     ));
@@ -140,7 +140,7 @@ fn create_action_bar(sm: &StateManager, bfr: gtk4::TextBuffer) -> gtk4::Box {
     let spacer = gtk::Box::builder().hexpand(true).build();
     let append_btn = gtk::Button::builder().label("Append Text to File").build();
 
-    append_btn.connect_clicked(glib::clone!(
+    append_btn.connect_clicked(clone!(
         #[strong] sm, #[weak] bfr,
         move |_| handle_append(&sm, &bfr)
     ));
