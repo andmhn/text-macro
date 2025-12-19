@@ -18,6 +18,7 @@ fn activate(app: &gtk::Application) {
     let sm = StateManager::new(State {
         path: String::new(),
         times: 2,
+        status_area: gtk::Label::builder().halign(gtk::Align::Start).build(),
     });
 
     let window = gtk::ApplicationWindow::builder()
@@ -91,13 +92,12 @@ fn create_editor_ui(window: &gtk::ApplicationWindow, sm: StateManager) {
             move |result| match result {
                 Ok(file) => {
                     let path = file.path().expect("Failed to get path");
-                    println!("Selected file: {:?}", path);
                     fb_clone.set_text(path.display().to_string());
                     sm_clone.set_path(path.display().to_string().as_str());
-                    println!("saved path {}\n", sm_clone.get_path());
+                    sm_clone.log(format!("Selected file: {:?}", path));
                 }
                 Err(err) => {
-                    eprintln!("Error selecting file: {}", err);
+                    sm_clone.log(format!("Error selecting file: {}", err));
                 }
             },
         );
@@ -139,9 +139,15 @@ fn create_editor_ui(window: &gtk::ApplicationWindow, sm: StateManager) {
     let sm_clone = sm.clone();
     repeat_btn.connect_clicked(move |_| {
         let str_prev = bfr.text(&bfr.start_iter(), &bfr.end_iter(), true);
-        for _ in 1..sm_clone.get_times() {
+        if str_prev.len() == 0 {
+            sm_clone.log("Skipping : Text area is empty");
+            return;
+        }
+        let n = sm_clone.get_times();
+        for _ in 1..n {
             bfr.insert(&mut bfr.end_iter(), str_prev.as_str());
         }
+        sm_clone.log(format!("repeated {} times", n));
     });
 
     let spacer2 = gtk::Box::builder().hexpand(true).build();
@@ -159,10 +165,10 @@ fn create_editor_ui(window: &gtk::ApplicationWindow, sm: StateManager) {
 
         match file {
             Ok(mut file) => match file.write_all(text.as_bytes()) {
-                Err(why) => panic!("couldn't write to {}: {}", path, why),
-                Ok(_) => println!("successfully wrote to {}", path),
+                Err(why) => sm_clone.log(format!("couldn't append to {}: {}", path, why)),
+                Ok(_) => sm_clone.log(format!("successfully appended to {}", path)),
             },
-            Err(why) => println!("Couldn't Open File: {} : {}", path, why),
+            Err(why) => sm_clone.log(format!("Couldn't Open File: {} : {}", path, why)),
         }
     });
 
@@ -172,17 +178,12 @@ fn create_editor_ui(window: &gtk::ApplicationWindow, sm: StateManager) {
     action_bar.append(&spacer2);
     action_bar.append(&append_btn);
 
-    let status_area = gtk::Label::builder() // TODO: Use Toast
-        .label("Welcome!")
-        .halign(gtk::Align::Start)
-        .build();
-
     grid.attach(&top_bar, 0, 0, 1, 1);
     grid.attach(&spacer, 0, 1, 1, 1);
     grid.attach(&description, 0, 2, 1, 1);
     grid.attach(&scrolled_text_area, 0, 3, 1, 1);
     grid.attach(&action_bar, 0, 4, 1, 1);
-    grid.attach(&status_area, 0, 5, 1, 1);
+    grid.attach(&sm.state.borrow().status_area, 0, 5, 1, 1);
 }
 
 //==========================================================
@@ -191,6 +192,7 @@ fn create_editor_ui(window: &gtk::ApplicationWindow, sm: StateManager) {
 struct State {
     path: String,
     times: u32,
+    status_area: gtk::Label,
 }
 
 #[derive(Clone)]
@@ -219,5 +221,12 @@ impl StateManager {
         let path = &mut self.state.borrow_mut().path;
         path.clear();
         path.push_str(s);
+    }
+
+    fn log<S: Into<String>>(&self, text: S) {
+        self.state
+            .borrow()
+            .status_area
+            .set_text(text.into().as_str());
     }
 }
