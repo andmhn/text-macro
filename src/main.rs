@@ -1,3 +1,4 @@
+use gtk::glib;
 use gtk::prelude::*;
 use gtk4 as gtk;
 use std::cell::RefCell;
@@ -78,7 +79,7 @@ fn create_editor_ui(window: &gtk::ApplicationWindow, sm: StateManager) {
     scrolled_text_area.add_css_class("scrolled_text_area");
 
     // ACTION BAR ---------------------------------------------------
-    let action_bar = create_action_bar(&sm, text_area);
+    let action_bar = create_action_bar(&sm, text_area.buffer());
 
     grid.attach(&top_bar, 0, 0, 1, 1);
     grid.attach(&spacer, 0, 1, 1, 1);
@@ -88,29 +89,30 @@ fn create_editor_ui(window: &gtk::ApplicationWindow, sm: StateManager) {
     grid.attach(&sm.state.borrow().status_area, 0, 5, 1, 1);
 }
 
+#[rustfmt::skip]
 fn create_topbar(window: &gtk4::ApplicationWindow, sm: &StateManager) -> gtk4::Box {
     let top_bar = gtk::Box::new(gtk4::Orientation::Horizontal, 5);
     let file_entry = gtk::Entry::builder()
         .placeholder_text("Enter the file path here...")
         .hexpand(true)
         .build();
-    let sm_clone = sm.clone();
-    let file_entry_buffer = file_entry.buffer();
-    file_entry.connect_changed(move |_| {
-        sm_clone.set_path(file_entry_buffer.text().as_str());
-    });
+    file_entry.connect_changed(glib::clone!(
+        #[strong] sm, #[weak] file_entry,
+        move |_| sm.set_path(file_entry.buffer().text().as_str())
+    ));
     top_bar.append(&file_entry);
 
     let picker_btn = gtk::Button::with_label("Select File");
-    let sm_clone = sm.clone();
-    let wn_clone = window.clone();
-    let fb = file_entry.buffer();
-    picker_btn.connect_clicked(move |_| handle_file_pick(&sm_clone, &wn_clone, &fb));
+    picker_btn.connect_clicked(glib::clone!(
+        #[strong] sm, #[weak] window, #[weak] file_entry,
+        move |_| handle_file_pick(&sm, &window, &file_entry.buffer())
+    ));
     top_bar.append(&picker_btn);
     top_bar
 }
 
-fn create_action_bar(sm: &StateManager, text_area: gtk4::TextView) -> gtk4::Box {
+#[rustfmt::skip]
+fn create_action_bar(sm: &StateManager, bfr: gtk4::TextBuffer) -> gtk4::Box {
     let action_bar = gtk::Box::new(gtk::Orientation::Horizontal, 5);
     let n_label = gtk::Label::builder().name("times ").build();
 
@@ -120,21 +122,28 @@ fn create_action_bar(sm: &StateManager, text_area: gtk4::TextView) -> gtk4::Box 
         .climb_rate(1.0)
         .digits(0)
         .build();
-    let sm_clone = sm.clone();
-    times_input.connect_value_changed(move |n| {
-        sm_clone.set_times(n.value_as_int() as u32);
-    });
+
+    times_input.connect_value_changed(glib::clone!(
+        #[strong] sm,
+        move |n| {
+            sm.set_times(n.value_as_int() as u32);
+        }
+    ));
 
     let repeat_btn = gtk::Button::builder().label("Repeat Text").build();
-    let bfr = text_area.buffer().clone();
-    let sm_clone = sm.clone();
-    repeat_btn.connect_clicked(move |_| handle_repeat(&sm_clone, &bfr));
+
+    repeat_btn.connect_clicked(glib::clone!(
+        #[strong] sm, #[weak] bfr,
+        move |_| handle_repeat(&sm, &bfr),
+    ));
 
     let spacer = gtk::Box::builder().hexpand(true).build();
     let append_btn = gtk::Button::builder().label("Append Text to File").build();
-    let sm_clone = sm.clone();
-    let bfr = text_area.buffer().clone();
-    append_btn.connect_clicked(move |_| handle_append(&sm_clone, &bfr));
+
+    append_btn.connect_clicked(glib::clone!(
+        #[strong] sm, #[weak] bfr,
+        move |_| handle_append(&sm, &bfr)
+    ));
 
     action_bar.append(&n_label);
     action_bar.append(&times_input);
