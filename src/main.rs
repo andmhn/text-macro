@@ -1,7 +1,9 @@
 use gtk::prelude::*;
 use gtk4 as gtk;
-use std::cell::{Ref, RefCell};
+use std::cell::RefCell;
 use std::rc::Rc;
+
+use std::io::prelude::*;
 
 fn main() -> gtk::glib::ExitCode {
     let application = gtk::Application::builder()
@@ -15,7 +17,6 @@ fn activate(app: &gtk::Application) {
     load_css();
     let sm = StateManager::new(State {
         path: String::new(),
-        content: String::new(),
         times: 2,
     });
 
@@ -93,6 +94,7 @@ fn create_editor_ui(window: &gtk::ApplicationWindow, sm: StateManager) {
                     println!("Selected file: {:?}", path);
                     fb_clone.set_text(path.display().to_string());
                     sm_clone.set_path(path.display().to_string().as_str());
+                    println!("saved path {}\n", sm_clone.get_path());
                 }
                 Err(err) => {
                     eprintln!("Error selecting file: {}", err);
@@ -144,7 +146,25 @@ fn create_editor_ui(window: &gtk::ApplicationWindow, sm: StateManager) {
 
     let spacer2 = gtk::Box::builder().hexpand(true).build();
     let append_btn = gtk::Button::builder().label("Append Text to File").build();
-    append_btn.connect_clicked(|_| {}); // FIXME
+    let sm_clone = sm.clone();
+    let bfr = text_area.buffer().clone();
+    append_btn.connect_clicked(move |_| {
+        let path = sm_clone.get_path();
+        let text = bfr.text(&bfr.start_iter(), &bfr.end_iter(), true);
+
+        let file = std::fs::OpenOptions::new()
+            .append(true)
+            .create(false)
+            .open(&path);
+
+        match file {
+            Ok(mut file) => match file.write_all(text.as_bytes()) {
+                Err(why) => panic!("couldn't write to {}: {}", path, why),
+                Ok(_) => println!("successfully wrote to {}", path),
+            },
+            Err(why) => println!("Couldn't Open File: {} : {}", path, why),
+        }
+    });
 
     action_bar.append(&n_label);
     action_bar.append(&times_input);
@@ -170,7 +190,6 @@ fn create_editor_ui(window: &gtk::ApplicationWindow, sm: StateManager) {
 //==========================================================
 struct State {
     path: String,
-    content: String,
     times: u32,
 }
 
@@ -201,18 +220,4 @@ impl StateManager {
         path.clear();
         path.push_str(s);
     }
-
-    // fn get_content(&self) -> Ref<'_, String> {
-    //     Ref::map(self.state.borrow(), |s| &s.content)
-    //     // use immedietly, ex:
-    //     // println!("Path: {}", *state.get_content());
-    // }
-
-    // fn repeat_content(&self, n: u8) {
-    //     let content = &mut self.state.borrow_mut().content;
-    //     let str_prev = content.clone();
-    //     for _ in 1..n {
-    //         content.push_str(str_prev.as_str());
-    //     }
-    // }
 }
