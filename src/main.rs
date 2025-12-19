@@ -35,7 +35,7 @@ fn load_css() {
     let css = ".scrolled_text_area {\n
                     border-style: solid;\n
                     border-width: 2px;\n
-                    border-color: rgba(233, 84, 32, 0.4);\n
+                    border-color: alpha(@theme_selected_bg_color, 0.5);\n
                     border-radius: 5px;\n
                     padding: 1px;\n
                 }\n";
