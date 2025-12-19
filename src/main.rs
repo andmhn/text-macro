@@ -16,6 +16,7 @@ fn activate(app: &gtk::Application) {
     let sm = StateManager::new(State {
         path: String::new(),
         content: String::new(),
+        times: 2,
     });
 
     let window = gtk::ApplicationWindow::builder()
@@ -99,7 +100,6 @@ fn create_editor_ui(window: &gtk::ApplicationWindow, sm: StateManager) {
             },
         );
     });
-    sm.get_content();
     top_bar.append(&picker_btn);
 
     // TEXT AREA ----------------------------------------------------
@@ -109,7 +109,6 @@ fn create_editor_ui(window: &gtk::ApplicationWindow, sm: StateManager) {
         .label("Text to Input/Repeat:")
         .halign(gtk::Align::Start)
         .build();
-    // FIXME : extract buffer state
     let text_area = gtk::TextView::builder().margin_start(3).build();
     let scrolled_text_area = gtk::ScrolledWindow::builder()
         .hexpand(true)
@@ -123,14 +122,25 @@ fn create_editor_ui(window: &gtk::ApplicationWindow, sm: StateManager) {
     let n_label = gtk::Label::builder().name("times ").build();
 
     let adj = gtk::Adjustment::new(2.0, 0.0, 999.0, 1.0, 10.0, 0.0);
-    let times_input = gtk::SpinButton::builder() // FIXME: extract times state data
+    let times_input = gtk::SpinButton::builder()
         .adjustment(&adj)
         .climb_rate(1.0)
         .digits(0)
         .build();
+    let sm_clone = sm.clone();
+    times_input.connect_value_changed(move |n| {
+        sm_clone.set_times(n.value_as_int() as u32);
+    });
 
     let repeat_btn = gtk::Button::builder().label("Repeat Text").build();
-    repeat_btn.connect_clicked(|_| {}); // FIXME
+    let bfr = text_area.buffer().clone();
+    let sm_clone = sm.clone();
+    repeat_btn.connect_clicked(move |_| {
+        let str_prev = bfr.text(&bfr.start_iter(), &bfr.end_iter(), true);
+        for _ in 1..sm_clone.get_times() {
+            bfr.insert(&mut bfr.end_iter(), str_prev.as_str());
+        }
+    });
 
     let spacer2 = gtk::Box::builder().hexpand(true).build();
     let append_btn = gtk::Button::builder().label("Append Text to File").build();
@@ -161,6 +171,7 @@ fn create_editor_ui(window: &gtk::ApplicationWindow, sm: StateManager) {
 struct State {
     path: String,
     content: String,
+    times: u32,
 }
 
 #[derive(Clone)]
@@ -175,6 +186,13 @@ impl StateManager {
         }
     }
 
+    fn get_times(&self) -> u32 {
+        self.state.borrow().times
+    }
+    fn set_times(&self, t: u32) {
+        self.state.borrow_mut().times = t;
+    }
+
     fn get_path(&self) -> String {
         self.state.borrow().path.clone()
     }
@@ -184,17 +202,17 @@ impl StateManager {
         path.push_str(s);
     }
 
-    fn get_content(&self) -> Ref<'_, String> {
-        Ref::map(self.state.borrow(), |s| &s.content)
-        // use immedietly, ex:
-        // println!("Path: {}", *state.get_content());
-    }
+    // fn get_content(&self) -> Ref<'_, String> {
+    //     Ref::map(self.state.borrow(), |s| &s.content)
+    //     // use immedietly, ex:
+    //     // println!("Path: {}", *state.get_content());
+    // }
 
-    fn repeat_content(&self, n: u8) {
-        let content = &mut self.state.borrow_mut().content;
-        let str_prev = content.clone();
-        for _ in 1..n {
-            content.push_str(str_prev.as_str());
-        }
-    }
+    // fn repeat_content(&self, n: u8) {
+    //     let content = &mut self.state.borrow_mut().content;
+    //     let str_prev = content.clone();
+    //     for _ in 1..n {
+    //         content.push_str(str_prev.as_str());
+    //     }
+    // }
 }
