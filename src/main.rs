@@ -73,7 +73,7 @@ fn create_editor_ui(window: &gtk::ApplicationWindow, sm: StateManager) {
         .build();
     let sm_clone = sm.clone();
     let file_entry_buffer = file_entry.buffer();
-    file_entry.connect_activate(move |_| {
+    file_entry.connect_changed(move |_| {
         sm_clone.set_path(file_entry_buffer.text().as_str());
     });
     top_bar.append(&file_entry);
