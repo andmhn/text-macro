@@ -195,6 +195,15 @@ fn handle_append(sm: &StateManager, bfr: &gtk::TextBuffer) {
     let path = sm.get_path();
     let text = bfr.text(&bfr.start_iter(), &bfr.end_iter(), true);
 
+    if text.len() == 0 {
+        sm.log("Hey! Text area is Empty!");
+        return;
+    }
+    if path.len() == 0 {
+        sm.log("Hey! File Path is Empty!");
+        return;
+    }
+
     let file = std::fs::OpenOptions::new()
         .append(true)
         .create(false)
