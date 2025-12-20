@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use std::io::prelude::*;
 
-fn main() -> gtk::glib::ExitCode {
+fn main() -> glib::ExitCode {
     let application = gtk::Application::builder()
         .application_id("com.github.andmhn.cr")
         .build();
@@ -64,7 +64,7 @@ fn create_editor_ui(window: &gtk::ApplicationWindow, sm: StateManager) {
     let top_bar = create_topbar(window, &sm);
 
     // TEXT AREA ----------------------------------------------------
-    let spacer = gtk::Box::new(gtk4::Orientation::Horizontal, 0);
+    let spacer = gtk::Box::new(gtk::Orientation::Horizontal, 0);
 
     let description = gtk::Label::builder()
         .label("Text to Input/Repeat:")
@@ -90,8 +90,8 @@ fn create_editor_ui(window: &gtk::ApplicationWindow, sm: StateManager) {
 }
 
 #[rustfmt::skip]
-fn create_topbar(window: &gtk4::ApplicationWindow, sm: &StateManager) -> gtk4::Box {
-    let top_bar = gtk::Box::new(gtk4::Orientation::Horizontal, 5);
+fn create_topbar(window: &gtk::ApplicationWindow, sm: &StateManager) -> gtk::Box {
+    let top_bar = gtk::Box::new(gtk::Orientation::Horizontal, 5);
     let file_entry = gtk::Entry::builder()
         .placeholder_text("Enter the file path here...")
         .hexpand(true)
@@ -112,7 +112,7 @@ fn create_topbar(window: &gtk4::ApplicationWindow, sm: &StateManager) -> gtk4::B
 }
 
 #[rustfmt::skip]
-fn create_action_bar(sm: &StateManager, bfr: gtk4::TextBuffer) -> gtk4::Box {
+fn create_action_bar(sm: &StateManager, bfr: gtk::TextBuffer) -> gtk::Box {
     let action_bar = gtk::Box::new(gtk::Orientation::Horizontal, 5);
     let n_label = gtk::Label::builder().name("times ").build();
 
@@ -157,7 +157,7 @@ fn create_action_bar(sm: &StateManager, bfr: gtk4::TextBuffer) -> gtk4::Box {
 // EVENTS
 // ==================================================================
 
-fn handle_file_pick(sm: &StateManager, wn: &gtk4::ApplicationWindow, fb: &gtk4::EntryBuffer) {
+fn handle_file_pick(sm: &StateManager, wn: &gtk::ApplicationWindow, fb: &gtk::EntryBuffer) {
     let file_dialog = gtk::FileDialog::new();
     let fb = fb.clone();
     let sm = sm.clone();
@@ -178,7 +178,7 @@ fn handle_file_pick(sm: &StateManager, wn: &gtk4::ApplicationWindow, fb: &gtk4::
     );
 }
 
-fn handle_repeat(sm: &StateManager, bfr: &gtk4::TextBuffer) {
+fn handle_repeat(sm: &StateManager, bfr: &gtk::TextBuffer) {
     let str_prev = bfr.text(&bfr.start_iter(), &bfr.end_iter(), true);
     if str_prev.len() == 0 {
         sm.log("Skipping : Text area is empty");
@@ -191,7 +191,7 @@ fn handle_repeat(sm: &StateManager, bfr: &gtk4::TextBuffer) {
     sm.log(format!("repeated {} times", n));
 }
 
-fn handle_append(sm: &StateManager, bfr: &gtk4::TextBuffer) {
+fn handle_append(sm: &StateManager, bfr: &gtk::TextBuffer) {
     let path = sm.get_path();
     let text = bfr.text(&bfr.start_iter(), &bfr.end_iter(), true);
 
